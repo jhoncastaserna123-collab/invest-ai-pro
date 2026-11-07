@@ -10,48 +10,52 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Descargar proyecto
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Configurar Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: "8.9"
 
       - name: Configurar Android
         shell: bash
         run: |
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
 
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-          test -n "$SDKMANAGER"
-
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses
-          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          test -d /usr/local/lib/android/sdk/platforms/android-35
+          test -d /usr/local/lib/android/sdk/build-tools/35.0.0
 
       - name: Preparar archivos
+        shell: bash
         run: |
           mkdir -p source
           test -f Release/INVEST_AI_PRO_UPLOAD.zip
           unzip -q Release/INVEST_AI_PRO_UPLOAD.zip -d source
+
           mkdir -p app/src/main/assets
           FILE=$(find source -type f -iname index.html | head -n 1)
-          test -n "$FILE"
+
+          if [ -z "$FILE" ]; then
+            echo "ERROR: No se encontró index.html dentro del ZIP"
+            exit 1
+          fi
+
           cp "$FILE" app/src/main/assets/index.html
 
       - name: Crear proyecto Android
+        shell: bash
         run: |
           mkdir -p app/src/main/java/com/invest/aipro
 
@@ -129,10 +133,13 @@ jobs:
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
+
                   WebView web = new WebView(this);
                   WebSettings settings = web.getSettings();
+
                   settings.setJavaScriptEnabled(true);
                   settings.setDomStorageEnabled(true);
+
                   setContentView(web);
                   web.loadUrl("file:///android_asset/index.html");
               }
