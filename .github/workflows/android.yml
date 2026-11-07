@@ -6,7 +6,7 @@ on:
   push:
     paths:
       - ".github/workflows/android.yml"
-      - "Release/INVEST_AI_PRO_UPLOAD.zip"
+      - "INVEST_AI_PRO_RELEASE.zip"
 
 jobs:
   build:
@@ -27,28 +27,40 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Configurar Android
+      - name: Verificar Android SDK
         shell: bash
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
-          echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
 
-          test -d /usr/local/lib/android/sdk/platforms/android-35
-          test -d /usr/local/lib/android/sdk/build-tools/35.0.0
+          SDK=/usr/local/lib/android/sdk
+
+          echo "Versiones instaladas:"
+          ls "$SDK/platforms"
+          ls "$SDK/build-tools"
+
+          test -d "$SDK/platforms/android-35"
+          test -d "$SDK/build-tools/35.0.0"
 
       - name: Preparar archivos
         shell: bash
         run: |
           mkdir -p source
-          test -f Release/INVEST_AI_PRO_UPLOAD.zip
-          unzip -q Release/INVEST_AI_PRO_UPLOAD.zip -d source
+
+          if [ ! -f INVEST_AI_PRO_RELEASE.zip ]; then
+            echo "No se encuentra INVEST_AI_PRO_RELEASE.zip"
+            exit 1
+          fi
+
+          unzip -q INVEST_AI_PRO_RELEASE.zip -d source
 
           mkdir -p app/src/main/assets
+
           FILE=$(find source -type f -iname index.html | head -n 1)
 
           if [ -z "$FILE" ]; then
-            echo "ERROR: No se encontró index.html dentro del ZIP"
+            echo "No se encontró index.html dentro del ZIP"
+            find source -maxdepth 4 -type f
             exit 1
           fi
 
