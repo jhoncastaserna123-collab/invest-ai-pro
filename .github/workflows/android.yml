@@ -27,12 +27,15 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      
       - name: Configurar Android
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools,platforms;android-35,build-tools;35.0.0'
-
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
+      
+        
       - name: Preparar archivos
         run: |
           mkdir -p source
