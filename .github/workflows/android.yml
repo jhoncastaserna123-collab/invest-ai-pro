@@ -6,7 +6,7 @@ on:
   push:
     paths:
       - ".github/workflows/android.yml"
-      - "INVEST_AI_PRO_UPLOAD.zip"
+      - "Release/INVEST_AI_PRO_UPLOAD.zip"
 
 jobs:
   build:
@@ -26,20 +26,26 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      
+
       - name: Configurar Android
+        shell: bash
         run: |
           export ANDROID_HOME=/usr/local/lib/android/sdk
-          export ANDROID_SDK_ROOT=$ANDROID_HOME
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          test -x "$SDKMANAGER"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          test -n "$SDKMANAGER"
+
           yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses
           "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          
+
       - name: Preparar archivos
         run: |
           mkdir -p source
-          unzip -q INVEST_AI_PRO_UPLOAD.zip -d source
+          test -f Release/INVEST_AI_PRO_UPLOAD.zip
+          unzip -q Release/INVEST_AI_PRO_UPLOAD.zip -d source
           mkdir -p app/src/main/assets
           FILE=$(find source -type f -iname index.html | head -n 1)
           test -n "$FILE"
@@ -78,9 +84,11 @@ jobs:
           plugins {
               id 'com.android.application'
           }
+
           android {
               namespace 'com.invest.aipro'
               compileSdk 35
+
               defaultConfig {
                   applicationId 'com.invest.aipro'
                   minSdk 23
@@ -139,3 +147,4 @@ jobs:
         with:
           name: INVEST-AI-PRO-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
