@@ -52,7 +52,7 @@ jobs:
             exit 1
           fi
 
-          unzip -q INVEST_AI_PRO_RELEASE.zip -d source
+          unzip -q INVEST_AI_PRO_RELEASE_NUEVO.zip -d source
 
           mkdir -p app/src/main/assets
 
